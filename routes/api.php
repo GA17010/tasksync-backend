@@ -20,4 +20,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/unshare', [ProjectController::class, 'unshare']);
         Route::get('/shared-users', [ProjectController::class, 'sharedUsers']);
     });
+
+    Route::prefix('friends')->group(function () {
+        Route::post('send', [FriendController::class, 'sendRequest']);
+        Route::post('respond', [FriendController::class, 'respondRequest']);
+        Route::get('list', [FriendController::class, 'listFriends']);
+        Route::get('pending', [FriendController::class, 'pendingRequests']);
+    });
 });

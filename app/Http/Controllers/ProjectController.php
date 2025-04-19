@@ -115,7 +115,7 @@ class ProjectController extends Controller
 
         $project->delete();
 
-        return response()->json(['message' => 'Proyecto eliminado']);
+        return response()->json(['message' => 'Project deleted']);
     }
 
     public function share(Request $request, Project $project)
@@ -153,6 +153,6 @@ class ProjectController extends Controller
 
         $project->sharedWith()->detach($validated['user_id']);
 
-        return response()->json(['message' => 'Acceso removido exitosamente']);
+        return response()->json(['message' => 'Access successfully removed']);
     }
 }

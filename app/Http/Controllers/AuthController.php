@@ -46,7 +46,7 @@ class AuthController extends Controller
 
         if (! $user || ! Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Credenciales incorrectas.'],
+                'email' => ['Incorrect credentials.'],
             ]);
         }
 
@@ -67,6 +67,6 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Sesión cerrada']);
+        return response()->json(['message' => 'Closed session']);
     }
 }
