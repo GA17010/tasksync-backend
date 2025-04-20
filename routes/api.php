@@ -21,6 +21,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/shared-users', [ProjectController::class, 'sharedUsers']);
     });
 
+    Route::post('/tasks', [TaskController::class, 'store']);
+    Route::get('/projects/{project}/tasks', [TaskController::class, 'index']);
+    Route::put('/tasks/{task}', [TaskController::class, 'update']);
+    Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+
     Route::prefix('friends')->group(function () {
         Route::post('send', [FriendController::class, 'sendRequest']);
         Route::post('respond', [FriendController::class, 'respondRequest']);
