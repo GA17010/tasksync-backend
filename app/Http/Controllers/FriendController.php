@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\FriendRequest;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Notifications\FriendRequestNotification;
+use App\Notifications\FriendRespondedNotification;
+use Illuminate\Support\Facades\DB;
 
 class FriendController extends Controller
 {
@@ -30,19 +33,40 @@ class FriendController extends Controller
         $existing = FriendRequest::where(function ($q) use ($sender_id, $receiver) {
             $q->where('sender_id', $sender_id)
                 ->where('receiver_id', $receiver->id);
-        })->orWhere(function ($q) use ($sender_id, $receiver) {
-            $q->where('sender_id', $receiver->id)
-                ->where('receiver_id', $sender_id);
         })->first();
 
         if ($existing) {
             return response()->json(['message' => 'A request or friendship already exists.'], 400);
         }
 
+        $existing = FriendRequest::where(function ($q) use ($sender_id, $receiver) {
+            $q->where('receiver_id', $sender_id)
+                ->where('sender_id', $receiver->id)
+                ->whereIn('status', ['accepted', 'pending']);
+        })->first();
+
+        if ($existing) {
+            return response()->json(['message' => 'A request or friendship already exists.'], 400);
+        }
+
+        $existing = FriendRequest::where(function ($q) use ($sender_id, $receiver) {
+            $q->where('receiver_id', $sender_id)
+                ->where('sender_id', $receiver->id)
+                ->where('status', 'rejected');
+        })->first();
+
+        if($existing){
+            $existing->delete();
+        }
+
         $friendRequest = FriendRequest::create([
             'sender_id'   => $sender_id,
             'receiver_id' => $receiver->id,
         ]);
+
+        $sender = Auth::user();
+
+        $receiver->notify(new FriendRequestNotification($sender, $friendRequest->id));
 
         return response()->json([
             'id' => $receiver->id,
@@ -56,19 +80,29 @@ class FriendController extends Controller
     public function respondRequest(Request $request)
     {
         $request->validate([
-            'request_id' => 'required|exists:friend_requests,id',
+            'id' => 'required|exists:friend_requests,id',
             'action' => 'required|in:accepted,rejected',
         ]);
 
-        $friendRequest = FriendRequest::findOrFail($request->request_id);
+        $friendRequest = FriendRequest::findOrFail($request->id);
+        $user = User::find(Auth::id());
 
-        if ($friendRequest->receiver_id !== Auth::id()) {
+        if ($friendRequest->receiver_id !== $user->id) {
             return response()->json(['error' => 'You cannot respond to this request.'], 403);
         }
 
         $friendRequest->update([
             'status' => $request->action,
         ]);
+
+        $user->notifications()
+            ->where('data->id', $friendRequest->id)
+            ->update([
+                'read_at' => now(),
+                'data'    => DB::raw("jsonb_set(data, '{status}', '\"responded\"', true)")
+            ]);
+
+        $friendRequest->sender->notify(new FriendRespondedNotification($friendRequest->receiver, $friendRequest->id, $request->action));
 
         return response()->json(['message' => 'Updated application.']);
     }
@@ -95,7 +129,7 @@ class FriendController extends Controller
             });
 
         $me = Auth::user();
-        
+
         $friends->push([
             'id' => $me->id,
             'name' => $me->name,

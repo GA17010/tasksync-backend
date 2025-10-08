@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use Illuminate\Http\Request;
+use App\Models\User;
+use App\Notifications\ProjectSharedNotification;
 
 class ProjectController extends Controller
 {
@@ -127,6 +129,9 @@ class ProjectController extends Controller
         ]);
 
         $project->sharedWith()->syncWithoutDetaching([$request->user_id]);
+
+        $targetUser = User::find($request->user_id);
+        $targetUser->notify(new ProjectSharedNotification($project, $request->user()));
 
         return response()->json(['message' => 'User added to project']);
     }

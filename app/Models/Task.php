@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Project;
 use App\Models\User;
@@ -19,13 +20,13 @@ class Task extends Model
     ];
 
     // Relación: proyecto al que pertenece la tarea
-    public function project()
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
     // Relación: usuario asignado a la tarea
-    public function assignedUser()
+    public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
