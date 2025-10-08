@@ -12,7 +12,7 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
+            'name'     => 'required|string|max:200',
             'nickname' => 'required|string|max:50|unique:users,nickname',
             'icon'     => 'required|string|max:20',
             'email'    => 'required|string|email|unique:users,email',
@@ -46,7 +46,7 @@ class AuthController extends Controller
 
         if (! $user || ! Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Incorrect credentials.'],
+                'email' => [__('auth.validation_failed')],
             ]);
         }
 
@@ -68,5 +68,26 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Closed session']);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name'     => 'sometimes|required|string|max:200',
+            'nickname' => 'sometimes|required|string|max:50|unique:users,nickname,' . $user->id,
+            'icon'     => 'sometimes|required|string|max:20',
+            'email'    => 'sometimes|required|string|email|unique:users,email,' . $user->id,
+            'password' => 'sometimes|required|string|min:6|confirmed',
+        ]);
+
+        if (isset($validated['password'])) {
+            $validated['password'] = bcrypt($validated['password']);
+        }
+
+        $user->update($validated);
+
+        return response()->json($user);
     }
 }

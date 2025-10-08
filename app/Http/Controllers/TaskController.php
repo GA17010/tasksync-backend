@@ -103,7 +103,18 @@ class TaskController extends Controller
         $validated = $request->validate([
             'content'       => 'string|max:255',
             'status'      => 'in:todo,in_progress,in_review,done',
-            'assigned_to' => 'nullable|exists:users,id',
+            'assigned_to' => [
+                'nullable',
+                'exists:users,id',
+                function ($attribute, $value, $fail) use ($project) {
+                    $isValid = $value === $project->owner_id
+                        || $project->sharedWith()->where('user_id', $value)->exists();
+
+                    if (!$isValid) {
+                        $fail('The selected user is not a member of the project.');
+                    }
+                }
+            ],
         ]);
 
         $task->update($validated);

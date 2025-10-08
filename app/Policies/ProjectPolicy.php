@@ -20,7 +20,8 @@ class ProjectPolicy
      */
     public function view(User $user, Project $project): bool
     {
-        return $user->id === $project->owner_id;
+        return $user->id === $project->owner_id
+            || $project->sharedWith()->where('user_id', $user->id)->exists();
     }
 
     /**
@@ -36,7 +37,8 @@ class ProjectPolicy
      */
     public function update(User $user, Project $project): bool
     {
-        return $user->id === $project->owner_id;
+        return $user->id === $project->owner_id
+            || $project->sharedWith()->where('user_id', $user->id)->exists();
     }
 
     /**
